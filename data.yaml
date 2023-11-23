@@ -1,0 +1,7 @@
+path: ./tiles2
+train: train
+val: val
+
+names:
+  0: road
+  1: building
