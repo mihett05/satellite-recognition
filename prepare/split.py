@@ -26,6 +26,7 @@ def split_image(img_path: str, mask_path: str, dataset_name: str):
 
             mask_result = np.zeros(tile_mask.shape[:2])
             contours, _ = cv.findContours(tile_mask, cv.RETR_TREE, cv.CHAIN_APPROX_NONE)
+
             cv.drawContours(mask_result, contours, -1, (255, 0, 0), thickness=-1)
 
             cv.imwrite(str(base_path / "images" / f"{counter:>04}.png"), tile)

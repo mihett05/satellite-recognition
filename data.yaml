@@ -1,4 +1,4 @@
-path: ./tiles2
+path: ./yolo
 train: train
 val: val
 

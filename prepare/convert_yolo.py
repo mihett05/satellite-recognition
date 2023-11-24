@@ -17,9 +17,9 @@ def convert_mask_to_yolo(dataset_name: str):
         contours, _ = cv.findContours(mask, cv.RETR_TREE, cv.CHAIN_APPROX_NONE)
         rows = []
         for contour in contours:
-            rows.append(
-                "1 " + " ".join(map(str, (contour / normal).flatten().tolist()))
-            )
+            row = (contour / normal).flatten().tolist()
+            if len(row) >= 6:
+                rows.append("1 " + " ".join(map(str, row)))
         shutil.move(path / "images" / file, path / file)
         with open(path / (file.split(".")[0] + ".txt"), "w") as f:
             f.write("\n".join(rows))
