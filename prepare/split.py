@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 
-def split_image(img_path: str, mask_path: str, dataset_name: str):
+def split_image(img_path: str, mask_path: str, dataset_name: str, size: int = 256):
     img = cv.imread(img_path)
     mask = cv.cvtColor(cv.imread(mask_path), cv.COLOR_BGR2GRAY)
 
@@ -19,10 +19,10 @@ def split_image(img_path: str, mask_path: str, dataset_name: str):
 
     counter = 0
 
-    for y in range(h // 256 - 1):
-        for x in range(w // 256 - 1):
-            tile = img[y * 256 : (y + 1) * 256, x * 256 : (x + 1) * 256]
-            tile_mask = mask[y * 256 : (y + 1) * 256, x * 256 : (x + 1) * 256]
+    for y in range(h // size - 1):
+        for x in range(w // size - 1):
+            tile = img[y * size : (y + 1) * size, x * size : (x + 1) * size]
+            tile_mask = mask[y * size : (y + 1) * size, x * size : (x + 1) * size]
 
             mask_result = np.zeros(tile_mask.shape[:2])
             contours, _ = cv.findContours(tile_mask, cv.RETR_TREE, cv.CHAIN_APPROX_NONE)

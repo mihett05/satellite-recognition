@@ -1,4 +1,4 @@
-path: ./yolo
+path: ./vendor0
 train: train
 val: val
 

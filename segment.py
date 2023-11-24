@@ -1,16 +1,14 @@
-from unittest.mock import Base
 import cv2 as cv
 import numpy as np
 import matplotlib.pyplot as plt
-import os
-import torch
 import sklearn.metrics
 from math import ceil
 from ultralytics import YOLO
 from ultralytics.engine.results import Results
 
 # model = YOLO("yolov8n-seg.pt")
-model = YOLO("runs/segment/train17/weights/best.pt")
+# model = YOLO("runs/segment/train4/weights/best.pt")
+model = YOLO("best.pt")
 
 
 def train_model():
@@ -22,22 +20,26 @@ def predict_yolo(input_filename: str):
     origin_h, origin_w, _ = img.shape
     width = ceil(img.shape[1] / 256) * 256
     height = ceil(img.shape[0] / 256) * 256
-    img.resize((height, width, 3))
+    img = np.pad(img, ((0, height - origin_h), (0, width - origin_w), (0, 0)))
 
-    grid = np.zeros((height, width))
+    grid = np.zeros((height, width), dtype=bool)
 
-    for y in range(height // 256 - 1):
-        for x in range(width // 256 - 1):
-            tile = img[y * 256 : (y + 1) * 256, x * 256 : (x + 1) * 256]
-            result: list[Results] = model(tile)
+    for y in range(0, (height // 256 - 1) * 256, 128):
+        for x in range(0, (width // 256 - 1) * 256, 128):
+            if x + 256 >= width or y + 256 >= height:
+                break
+            tile = img[y : (y + 256), x : (x + 256)]
+            result: list[Results] = model(tile, augment=False)
             for r in result:
                 if r.masks is not None:
                     for mask in r.masks.data:
-                        grid[
-                            y * 256 : (y + 1) * 256, x * 256 : (x + 1) * 256
-                        ] += np.array(mask.data.cpu())
-    grid[grid != 0] = 255
+                        grid[y : (y + 256), x : (x + 256)] = grid[
+                            y : (y + 256), x : (x + 256)
+                        ] | np.array(mask.data.cpu(), dtype=bool)
+    grid = grid[:origin_h, :origin_w]
+    grid = grid.astype(dtype=int) * 255
     cv.imwrite("grid.png", grid)
+    return grid
 
 
 def predict_unet(input_filename: str):
@@ -72,18 +74,13 @@ def predict_unet(input_filename: str):
     cv.imwrite("grid.png", grid)
 
 
-def metrics(predict_name: str, true_name: str):
-    predict = cv.imread(predict_name, cv.COLOR_BGR2GRAY).flatten()
-    true = cv.imread(true_name, cv.COLOR_BGR2GRAY).flatten()
-    print(sklearn.metrics.f1_score(true, predict, pos_label=255))
+def metrics(predict: np.ndarray, true_name: str):
+    true = np.array(cv.imread(true_name, cv.COLOR_BGR2GRAY).flatten())
+    true[true > 0] = 1
+    print(sklearn.metrics.f1_score(true, predict.flatten() / 255, pos_label=1))
 
 
 if __name__ == "__main__":
-    # import gc
-
-    # gc.collect()
-
-    # torch.cuda.empty_cache()
-    # train_model()
-    predict_unet("perm_zhelezka_output.png")
-    metrics("grid.png", "perm_zhelezka_mask.png")
+    name = "000"
+    predict = predict_yolo(f"vendor/images/train_image_{name}.png")
+    metrics(predict, f"vendor/masks/train_mask_{name}.png")

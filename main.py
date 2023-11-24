@@ -39,37 +39,37 @@ async def download_bboxes(convert_yolo: bool = True):
 
 
 async def create_yolo():
-    await download_bboxes()
+    # await download_bboxes()
     parse_vendor()
-    unite_datasets(list(bboxes.keys()), "tiles1", filter=True)
-    unite_datasets([f"vendor{i}" for i in range(21)], "vendor", filter=True)
-    mix_dataset("tiles1")
-    mix_dataset("vendor")
-    unite_datasets(["vendor", "tiles1"], "yolo", filter=True)
-    mix_dataset("yolo")
+    # unite_datasets(list(bboxes.keys()), "tiles1", filter=True)
+    # unite_datasets([f"vendor{i}" for i in range(21)], "vendor", filter=True)
+    # mix_dataset("tiles1")
+    # mix_dataset("vendor")
+    # unite_datasets(["vendor", "tiles1"], "yolo", filter=True)
+    # mix_dataset("yolo")
 
 
 async def create_semantic():
     await download_bboxes(convert_yolo=False)
-    parse_vendor(convert_yolo=False)
+    # parse_vendor(convert_yolo=False)
     unite_datasets(
         list(bboxes.keys()),
-        "tiles1",
+        "tiles3",
         filter=True,
         convert_yolo=False,
     )
-    unite_datasets(
-        [f"vendor{i}" for i in range(21)],
-        "vendor",
-        filter=True,
-        convert_yolo=False,
-    )
-    unite_datasets(
-        ["vendor", "tiles1"],
-        "tiles2",
-        filter=True,
-        convert_yolo=False,
-    )
+    # unite_datasets(
+    #     [f"vendor{i}" for i in range(21)],
+    #     "vendor",
+    #     filter=True,
+    #     convert_yolo=False,
+    # )
+    # unite_datasets(
+    #     ["vendor", "tiles1"],
+    #     "tiles2",
+    #     filter=True,
+    #     convert_yolo=False,
+    # )
 
 
-asyncio.run(create_semantic())
+asyncio.run(create_yolo())
