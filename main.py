@@ -5,7 +5,6 @@ import sklearn.metrics
 import matplotlib.pyplot as plt
 
 from yolo import predict_yolo, yolo
-from deeplab import predict_deeplab
 
 
 def metrics(predict: np.ndarray, true_name: str):
@@ -36,6 +35,8 @@ def run():
     if model == 1:
         predict = predict_yolo(yolo, path)
     else:
+        from deeplab import predict_deeplab
+
         predict = predict_deeplab(path)
 
     cv.imwrite("debug.png", predict)
