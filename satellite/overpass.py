@@ -12,7 +12,7 @@ async def api_call(request: str) -> dict:
 
 async def get_building(bbox: tuple[float, float, float, float]):
     return await api_call(
-        f"nwr[building][building!=house][building!=yes]({', '.join(map(str, bbox))});"
+        f"nwr[building][building!=house][building!=yes][building!=detached][building!=construction][building!=garage][building!=kiosk][building!=hut][building!=garages][building!=roof][building!=shed][location!=kiosk]({', '.join(map(str, bbox))});"
     )
 
 

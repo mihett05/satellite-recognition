@@ -1,75 +1,61 @@
-import asyncio
 import os
+import cv2 as cv
+import numpy as np
+import sklearn.metrics
+import matplotlib.pyplot as plt
 
-from prepare.download import download_bbox
-from prepare.split import split_image
-from prepare.convert_yolo import convert_mask_to_yolo, mix_dataset
-from prepare.unite import unite_datasets
-from prepare.parse_vendor import parse_vendor
-
-from bboxes import bboxes
-
-
-async def create_dataset_from_bbox(
-    bbox: tuple[float, float, float, float],
-    name: str = "tiles",
-    convert_yolo: bool = True,
-):
-    output = f"{name}_output.png"
-    mask = f"{name}_mask.png"
-    dataset_name = name
-    if os.path.exists(os.path.join("datasets", dataset_name)):
-        print(f"[ERROR] Dataset '{dataset_name}' exists")
-        return
-    if not os.path.exists(output) or not os.path.exists(mask):
-        await download_bbox(bbox, output, mask)
-    split_image(output, mask, dataset_name)
-    if convert_yolo:
-        convert_mask_to_yolo(dataset_name)
-        mix_dataset(dataset_name)
+from yolo import predict_yolo, yolo
+from deeplab import predict_deeplab
 
 
-async def download_bboxes(convert_yolo: bool = True):
-    await asyncio.gather(
-        *[
-            create_dataset_from_bbox(bbox, key, convert_yolo=convert_yolo)
-            for key, bbox in bboxes.items()
-        ]
+def metrics(predict: np.ndarray, true_name: str):
+    true = np.array(cv.imread(true_name, cv.COLOR_BGR2GRAY).flatten())
+    true[true > 0] = 1
+    print(sklearn.metrics.f1_score(true, predict.flatten() / 255, pos_label=1))
+
+
+def run():
+    print(
+        "Выберите модель\n1)YOLOv8n (использовалась для генерации финального результата)\n2)DeepLab"
     )
+    model = 0
+    while not model:
+        inp = input()
+        if not inp.isdigit():
+            print("[ERROR] Введите число - номер модели")
+        elif int(inp) not in [1, 2]:
+            print("[ERROR] Введите число от 1 до 2")
+        else:
+            model = int(inp)
+    while True:
+        path = input("Введите путь до картинки: ")
+        if os.path.exists(path):
+            break
+        print("[ERROR] Путь не найден")
+
+    if model == 1:
+        predict = predict_yolo(yolo, path)
+    else:
+        predict = predict_deeplab(path)
+
+    cv.imwrite("debug.png", predict)
+    cv.imwrite("mask.png", predict / 255)
+    print("Результат записан в mask.png")
+
+    img = cv.imread(path)
+    img |= np.stack(
+        (predict, np.zeros_like(predict), np.zeros_like(predict)), axis=2
+    ).astype(dtype=np.uint32)
+
+    plt.imshow(img)
+    plt.show()
 
 
-async def create_yolo():
-    # await download_bboxes()
-    parse_vendor()
-    # unite_datasets(list(bboxes.keys()), "tiles1", filter=True)
-    # unite_datasets([f"vendor{i}" for i in range(21)], "vendor", filter=True)
-    # mix_dataset("tiles1")
-    # mix_dataset("vendor")
-    # unite_datasets(["vendor", "tiles1"], "yolo", filter=True)
-    # mix_dataset("yolo")
+def do_test():
+    for i in range(8):
+        predict = predict_yolo(yolo, f"test/images/test_image_{i:03}.png")
+        cv.imwrite(f"test/masks/test_mask_{i:03}.png", predict)
 
 
-async def create_semantic():
-    await download_bboxes(convert_yolo=False)
-    # parse_vendor(convert_yolo=False)
-    unite_datasets(
-        list(bboxes.keys()),
-        "tiles3",
-        filter=True,
-        convert_yolo=False,
-    )
-    # unite_datasets(
-    #     [f"vendor{i}" for i in range(21)],
-    #     "vendor",
-    #     filter=True,
-    #     convert_yolo=False,
-    # )
-    # unite_datasets(
-    #     ["vendor", "tiles1"],
-    #     "tiles2",
-    #     filter=True,
-    #     convert_yolo=False,
-    # )
-
-
-asyncio.run(create_yolo())
+if __name__ == "__main__":
+    run()
